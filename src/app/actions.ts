@@ -33,76 +33,20 @@ async function getHtml(url: string): Promise<string> {
 }
 
 async function processScrapedData(properties: any[], originalUrl: string, historyEntry: Omit<HistoryEntry, 'id' | 'date' | 'propertyCount'>) {
-    console.log(`AI extracted ${properties.length} properties. Processing content...`);
+    console.log(`AI extracted ${properties.length} properties. Using original image URLs directly.`);
     
     const processingPromises = properties.map(async (p, index) => {
         const propertyId = `prop-${Date.now()}-${index}`;
         
-        const absoluteImageUrls = (p.image_urls && Array.isArray(p.image_urls))
-            ? p.image_urls.map((imgUrl: string) => {
-                try {
-                    if (!imgUrl) return null;
-                    const baseUrl = originalUrl.startsWith('http') ? originalUrl : (p.page_link || 'https://example.com');
-                    return new URL(imgUrl, baseUrl).href;
-                } catch (e) {
-                    console.warn(`Could not create absolute URL for image: ${imgUrl}`);
-                    return null;
-                }
-            }).filter((url: string | null): url is string => url !== null)
+        // Directly use the image URLs extracted by the AI.
+        // The AI prompt is instructed to find absolute URLs.
+        const imageUrls = (p.image_urls && Array.isArray(p.image_urls))
+            ? p.image_urls.filter((url: string | null): url is string => !!url && url.startsWith('http'))
             : [];
 
-        console.log(`[Image Processing] Starting for propertyId: ${propertyId}. Found ${absoluteImageUrls.length} candidate images.`);
-        
-        const imageProcessingPromises = absoluteImageUrls.map(async (imgUrl, imgIndex) => {
-            try {
-                console.log(`[Image Processing] [${imgIndex+1}/${absoluteImageUrls.length}] Attempting to fetch: ${imgUrl}`);
-                const referer = originalUrl.startsWith('http') ? originalUrl : (p.page_link || 'https://example.com');
-                const response = await fetch(imgUrl, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (compatible; PropScrapeAI/1.0)',
-                        'Referer': referer,
-                    },
-                });
+        console.log(`[Image Processing] Found ${imageUrls.length} valid image URLs for propertyId: ${propertyId}.`);
 
-                if (!response.ok) {
-                    throw new Error(`Fetch failed with status ${response.status}`);
-                }
-                
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.startsWith('image/')) {
-                    throw new Error(`Invalid content-type: ${contentType}. Expected an image.`);
-                }
-
-                const imageBuffer = await response.arrayBuffer();
-                 if (imageBuffer.byteLength === 0) {
-                    throw new Error('Downloaded image buffer is empty.');
-                }
-                const imageSizeKB = Math.round(imageBuffer.byteLength / 1024);
-                console.log(`[Image Download] [${imgIndex+1}] Success. Size: ${imageSizeKB}KB. Content-Type: ${contentType}`);
-                    
-                const fileExtension = contentType.split('/')[1]?.split('+')[0] || 'jpg';
-                const propertyImageDir = path.join(process.cwd(), 'public', 'uploads', 'properties', propertyId);
-                await fs.mkdir(propertyImageDir, { recursive: true });
-
-                const fileName = `${Date.now()}_${imgIndex}.${fileExtension}`;
-                const filePath = path.join(propertyImageDir, fileName);
-
-                console.log(`[Image Save] [${imgIndex+1}] Saving to local path: ${filePath}`);
-                await fs.writeFile(filePath, Buffer.from(imageBuffer));
-                
-                const publicUrl = `/uploads/properties/${propertyId}/${fileName}`;
-                console.log(`[Image Save] [${imgIndex+1}] Success. Public URL: ${publicUrl}`);
-                return publicUrl;
-
-            } catch (err: any) {
-                console.error(`[Image Processing] [${imgIndex+1}] Failed to process image ${imgUrl}. Error:`, err.message);
-                return imgUrl; // Fallback to original URL on failure
-            }
-        });
-        
-        const processedImageUrls = (await Promise.all(imageProcessingPromises)).filter((url): url is string => !!url);
-
-        const finalImageUrls = processedImageUrls.length > 0 ? processedImageUrls : ['https://placehold.co/600x400.png'];
+        const finalImageUrls = imageUrls.length > 0 ? imageUrls : ['https://placehold.co/600x400.png'];
         
         const enhancedContent = await enhancePropertyContent({ title: p.title, description: p.description });
         
@@ -199,7 +143,6 @@ export async function scrapeBulk(urls: string): Promise<Property[] | null> {
 
 export async function saveProperty(property: Property) {
     await savePropertiesToDb([property]);
-    revalidatePath('/database');
 }
 
 export async function updateProperty(property: Property) {

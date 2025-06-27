@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow to extract property information from HTML.
@@ -71,17 +72,19 @@ const prompt = ai.definePrompt({
 Your goal is to populate all fields in the provided JSON schema.
 
 **CRITICAL INSTRUCTIONS FOR IMAGE EXTRACTION:**
-- Find all relevant, high-quality image URLs for the property.
-- Look for images in various places:
-  - Standard \`<img>\` tags. Check the \`src\` attribute.
-  - Lazy-loaded images. Check for \`data-src\`, \`data-original\`, or similar attributes.
-  - Responsive images inside \`<picture>\` tags. Look for \`<source>\` elements and their \`srcset\` attributes.
-  - Images set as CSS backgrounds. Look for \`style="background-image: url(...)"\`.
+- Find all relevant, high-quality image URLs for the property. Be thorough.
+- Look for images in these common patterns:
+  - Standard \`<img>\` tags. Check \`src\`, but also prioritize \`data-src\`, \`data-original\`, or \`data-lazy-src\` for lazy-loaded images.
+  - Responsive images inside \`<picture>\` tags. Look for \`<source>\` elements and their \`srcset\` attributes. Grab the highest resolution URL if multiple are present.
+  - Images set as CSS backgrounds on \`<div>\` or other elements. Look for \`style="background-image: url(...)"\`.
+  - Images within gallery or slider components. These might be in elements with classes like \`.gallery\`, \`.slider\`, \`.carousel\`, or have attributes like \`data-slick-index\`.
+- Ensure all extracted image URLs are absolute URLs (i.e., they start with http or https). If you find relative URLs (e.g., '/images/prop.jpg'), you MUST convert them to absolute URLs. You can usually infer the base domain from other absolute links on the page.
+- Exclude any placeholder images. These often contain words like 'placeholder', 'default', or dimensions like '600x400' in the URL itself.
+- For 'image_urls', if you cannot find ANY images after trying all the methods above, return an empty array [].
+
 - For all string fields, if you cannot find the information, return an empty string "".
 - For all number fields, if you cannot find the information, return 0.
 - For all array fields (like 'features'), if no information is found, return an empty array [].
-- For 'image_urls', if you cannot find ANY images after trying all the methods above, return an empty array []. DO NOT return placeholder URLs.
-- Ensure all extracted image URLs are absolute (i.e., they start with http or https). If you find relative URLs, do your best to resolve them into absolute URLs based on the likely domain.
 - Extract contact details like phone numbers and emails for the listed person or agency.
 
 HTML Content:

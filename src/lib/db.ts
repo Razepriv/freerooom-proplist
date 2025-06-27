@@ -41,8 +41,31 @@ export async function getHistory(): Promise<HistoryEntry[]> {
 
 export async function savePropertiesToDb(newProperties: Property[]): Promise<void> {
     const db = await getDb();
-    // Always add new properties to the beginning of the array, without checking for duplicates.
-    const updatedDb = [...newProperties, ...db];
+    const existingKeys = new Set(db.map(p => `${p.original_url}::${p.original_title}`));
+
+    const uniqueNewProperties = newProperties.filter(p => {
+        // A generic URL for HTML scrapes means we can't effectively check for duplicates, so always allow them.
+        if (p.original_url === 'scraped-from-html') {
+            return true;
+        }
+        const key = `${p.original_url}::${p.original_title}`;
+        if (existingKeys.has(key)) {
+            console.log(`Skipping duplicate property: "${p.original_title}" from ${p.original_url}`);
+            return false;
+        }
+        return true;
+    });
+
+    if (newProperties.length > 0 && uniqueNewProperties.length === 0) {
+       throw new Error("This property already exists in the database.");
+    }
+    
+    if (uniqueNewProperties.length === 0) {
+        console.log("No new properties to save.");
+        return; // Nothing to do
+    }
+
+    const updatedDb = [...uniqueNewProperties, ...db];
     await writeJsonFile(dbPath, updatedDb);
     revalidatePath('/database');
 }
