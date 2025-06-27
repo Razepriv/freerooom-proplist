@@ -118,7 +118,7 @@ export const downloadCsv = (data: Property[], filename:string) => {
     }
     
     const csvHeaders = [
-        'Title', 'Content', 'image', 'Matterport', 'Categories', 'property_a',
+        'Title', 'Content', 'images', 'Matterport', 'Categories', 'property_a',
         'property_b', 'property_c', 'property_d', 'property_e', 'property_f',
         'property_g', 'property_h', 'property_i', 'property_j', 'property_k',
         'property_l', 'Features', 'Term and Condition'
@@ -127,7 +127,7 @@ export const downloadCsv = (data: Property[], filename:string) => {
     const csvData = data.map(prop => ({
         'Title': prop.title,
         'Content': prop.description,
-        'image': prop.image_url,
+        'images': (prop.image_urls || []).map(getAbsoluteUrl).join(' | '),
         'Matterport': prop.matterportLink,
         'Categories': prop.what_do,
         'property_a': prop.bedrooms,
@@ -152,7 +152,7 @@ export const downloadCsv = (data: Property[], filename:string) => {
     const secondRow = {
         'Title': 'Property Id',
         'Content': 'Description',
-        'image': 'image URL',
+        'images': 'image URL 1 | image URL 2 | ...',
         'Matterport': 'Matterport',
         'Categories': 'Rental type',
         'property_a': 'Beds property',
