@@ -21,6 +21,7 @@ const ExtractedPropertySchema = z.object({
   area: z.string().describe('The total area of the property (e.g., "2,500 sqft").'),
   property_type: z.string().describe('The type of property (e.g., House, Apartment).'),
   image_urls: z.array(z.string()).describe('A list of URLs to all primary images of the property.'),
+  matterportLink: z.string().describe('A link to a Matterport 3D tour, if available.'),
   mortgage: z.string().describe('Mortgage information, if available.'),
   neighborhood: z.string().describe('The neighborhood where the property is located.'),
   what_do: z.string().describe('The purpose of the listing (e.g., For Rent, For Sale).'),

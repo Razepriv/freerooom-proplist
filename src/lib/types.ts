@@ -1,3 +1,4 @@
+
 export type Property = {
     id: string;
     original_url: string;
@@ -28,6 +29,7 @@ export type Property = {
     features: string[];
     terms_and_condition: string;
     page_link: string;
+    matterportLink: string;
 
     validated_information: string;
     building_information: string;

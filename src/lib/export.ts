@@ -78,6 +78,9 @@ const createNestedObject = (prop: Property) => {
         original_title: prop.original_title,
         original_description: prop.original_description,
     },
+    matterport: {
+      matterportLink: prop.matterportLink
+    }
   };
 };
 
@@ -101,22 +104,75 @@ const flattenObject = (obj: any, parentKey = '', result: { [key: string]: any } 
 
 // Function to download data as a JSON file
 export const downloadJson = (data: Property[], filename: string) => {
-  const flattenedData = data.map(prop => flattenObject(createNestedObject(prop)));
-  const jsonString = JSON.stringify(flattenedData, null, 2);
+  const preparedData = data.map(createNestedObject);
+  const jsonString = JSON.stringify(preparedData, null, 2);
   const blob = new Blob([jsonString], { type: 'application/json' });
   saveAs(blob, `${filename}.json`);
 };
 
 // Function to download data as a CSV file
 export const downloadCsv = (data: Property[], filename:string) => {
-    const flattenedData = data.map(prop => flattenObject(createNestedObject(prop)));
-
-    if (flattenedData.length === 0) {
+    if (data.length === 0) {
         alert("No data to export.");
         return;
     }
     
-    const worksheet = utils.json_to_sheet(flattenedData);
+    const csvHeaders = [
+        'Title', 'Content', 'image', 'Matterport', 'Categories', 'property_a',
+        'property_b', 'property_c', 'property_d', 'property_e', 'property_f',
+        'property_g', 'property_h', 'property_i', 'property_j', 'property_k',
+        'property_l', 'Features', 'Term and Condition'
+    ];
+
+    const csvData = data.map(prop => ({
+        'Title': prop.title,
+        'Content': prop.description,
+        'image': prop.image_url,
+        'Matterport': prop.matterportLink,
+        'Categories': prop.what_do,
+        'property_a': prop.bedrooms,
+        'property_b': prop.bathrooms,
+        'property_c': prop.area,
+        'property_d': prop.tenant_type,
+        'property_e': prop.rental_timing,
+        'property_f': prop.furnish_type,
+        'property_g': prop.floor_number,
+        'property_h': prop.permit_number,
+        'property_i': prop.ded_license_number,
+        'property_j': prop.rera_registration_number,
+        'property_k': prop.dld_brn,
+        'property_l': prop.reference_id,
+        'Features': (prop.features || []).join(' | '),
+        'Term and Condition': prop.terms_and_condition,
+    }));
+
+    const worksheet = utils.json_to_sheet(csvData, { header: csvHeaders, skipHeader: false });
+    
+    // Add the second row with example/condition data
+    const secondRow = {
+        'Title': 'Property Id',
+        'Content': 'Description',
+        'image': 'image URL',
+        'Matterport': 'Matterport',
+        'Categories': 'Rental type',
+        'property_a': 'Beds property',
+        'property_b': 'Baths property',
+        'property_c': 'Sqft property',
+        'property_d': 'Tenant Type',
+        'property_e': 'Rental Period',
+        'property_f': 'Furnish type',
+        'property_g': 'Floor number',
+        'property_h': 'DLD permit number',
+        'property_i': 'DED license number',
+        'property_j': 'Rera registration number',
+        'property_k': 'DLD BRN',
+        'property_l': 'Reference Id',
+        'Features': 'Take them with the | pipe SEPERATED',
+        'Term and Condition': 'Term and Condition (Check on website and update)',
+    };
+    const secondRowArray = csvHeaders.map(header => secondRow[header as keyof typeof secondRow] || '');
+    utils.sheet_add_aoa(worksheet, [secondRowArray], { origin: 'A2' });
+
     const workbook = utils.book_new();
     utils.book_append_sheet(workbook, worksheet, 'Properties');
 
