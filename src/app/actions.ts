@@ -3,11 +3,57 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 import { enhancePropertyContent } from '@/ai/flows/enhance-property-description';
 import { extractPropertyInfo } from '@/ai/flows/extract-property-info';
 import { savePropertiesToDb, saveHistoryEntry, updatePropertyInDb, deletePropertyFromDb } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { type Property, type HistoryEntry } from '@/lib/types';
+
+
+// Helper function to download an image from a URL and save it locally
+async function downloadImage(url: string, propertyId: string, imageIndex: number): Promise<string | null> {
+    if (!url || !url.startsWith('http')) {
+        console.error(`❌ Invalid or relative URL provided for download: ${url}`);
+        return null;
+    }
+
+    const publicDir = path.join(process.cwd(), 'public');
+    const propertyDir = path.join(publicDir, 'uploads', 'properties', propertyId);
+    
+    try {
+        await fs.mkdir(propertyDir, { recursive: true });
+        
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Referer': new URL(url).origin, // Add referer header to mimic browser request
+            },
+            redirect: 'follow', // Follow redirects
+        });
+        
+        if (!response.ok) {
+            console.error(`❌ Failed to fetch image ${url}: ${response.status} ${response.statusText}`);
+            return null;
+        }
+
+        const contentType = response.headers.get('content-type');
+        const extension = contentType ? contentType.split('/')[1] : 'jpg';
+        const filename = `${uuidv4()}.${extension}`;
+        const filepath = path.join(propertyDir, filename);
+
+        const arrayBuffer = await response.arrayBuffer();
+        await fs.writeFile(filepath, Buffer.from(arrayBuffer));
+        
+        const serverUrl = `/uploads/properties/${propertyId}/${filename}`;
+        console.log(`✅ Image downloaded and saved: ${serverUrl}`);
+        return serverUrl;
+    } catch (error) {
+        console.error(`❌ Error downloading image ${url}:`, error);
+        return null;
+    }
+}
+
 
 async function getHtml(url: string): Promise<string> {
     try {
@@ -33,36 +79,31 @@ async function getHtml(url: string): Promise<string> {
 }
 
 async function processScrapedData(properties: any[], originalUrl: string, historyEntry: Omit<HistoryEntry, 'id' | 'date' | 'propertyCount'>) {
-    console.log(`AI extracted ${properties.length} properties. Using original image URLs directly.`);
-    
     const processingPromises = properties.map(async (p, index) => {
         const propertyId = `prop-${Date.now()}-${index}`;
         
-        // Directly use the image URLs extracted by the AI.
-        // The AI prompt is instructed to find absolute URLs.
         const imageUrls = (p.image_urls && Array.isArray(p.image_urls))
-            ? p.image_urls.filter((url: string | null): url is string => !!url && url.startsWith('http'))
+            ? p.image_urls.filter((url: string | null): url is string => !!url)
             : [];
+        
+        console.log(`[Image Processing] Found ${imageUrls.length} image URLs to process for propertyId: ${propertyId}.`);
 
-        console.log(`[Image Processing] Found ${imageUrls.length} valid image URLs for propertyId: ${propertyId}.`);
-
-        const finalImageUrls = imageUrls.length > 0 ? imageUrls : ['https://placehold.co/600x400.png'];
+        const downloadPromises = imageUrls.map((imgUrl, i) => downloadImage(imgUrl, propertyId, i));
+        const downloadedUrls = (await Promise.all(downloadPromises)).filter((url): url is string => url !== null);
         
         const enhancedContent = await enhancePropertyContent({ title: p.title, description: p.description });
-        
+
         return {
             ...p,
             id: propertyId,
             original_url: originalUrl,
             original_title: p.title,
             original_description: p.description,
-            title: enhancedContent.enhancedTitle,
-            description: enhancedContent.enhancedDescription,
             enhanced_title: enhancedContent.enhancedTitle,
             enhanced_description: enhancedContent.enhancedDescription,
             scraped_at: new Date().toISOString(),
-            image_urls: finalImageUrls,
-            image_url: finalImageUrls[0],
+            image_urls: downloadedUrls,
+            image_url: downloadedUrls.length > 0 ? downloadedUrls[0] : 'https://placehold.co/600x400.png',
         };
     });
 
