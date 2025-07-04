@@ -1,4 +1,3 @@
-
 "use server";
 
 import { promises as fs } from 'fs';
@@ -88,7 +87,7 @@ async function processScrapedData(properties: any[], originalUrl: string, histor
         
         console.log(`[Image Processing] Found ${imageUrls.length} image URLs to process for propertyId: ${propertyId}.`);
 
-        const downloadPromises = imageUrls.map((imgUrl, i) => downloadImage(imgUrl, propertyId, i));
+        const downloadPromises = imageUrls.map((imgUrl: string, i: number) => downloadImage(imgUrl, propertyId, i));
         const downloadedUrls = (await Promise.all(downloadPromises)).filter((url): url is string => url !== null);
         
         const enhancedContent = await enhancePropertyContent({ title: p.title, description: p.description });
@@ -99,6 +98,8 @@ async function processScrapedData(properties: any[], originalUrl: string, histor
             original_url: originalUrl,
             original_title: p.title,
             original_description: p.description,
+            title: enhancedContent.enhancedTitle || p.title, // Use enhanced as primary
+            description: enhancedContent.enhancedDescription || p.description, // Use enhanced as primary
             enhanced_title: enhancedContent.enhancedTitle,
             enhanced_description: enhancedContent.enhancedDescription,
             scraped_at: new Date().toISOString(),
@@ -188,10 +189,35 @@ export async function saveProperty(property: Property) {
 
 export async function updateProperty(property: Property) {
     await updatePropertyInDb(property);
-    revalidatePath('/database');
 }
 
 export async function deleteProperty(propertyId: string) {
     await deletePropertyFromDb(propertyId);
-    revalidatePath('/database');
+}
+
+// Export-related server actions
+export async function getFilteredPropertiesAction(filter: import('@/lib/db').ExportFilter) {
+    const { getFilteredProperties } = await import('@/lib/db');
+    return await getFilteredProperties(filter);
+}
+
+export async function getExportStatsAction(filter?: import('@/lib/db').ExportFilter) {
+    const { getExportStats } = await import('@/lib/db');
+    return await getExportStats(filter);
+}
+
+export async function getFilteredHistoryAction(filter?: { startDate?: string; endDate?: string; type?: string }) {
+    const { getFilteredHistory } = await import('@/lib/db');
+    return await getFilteredHistory(filter);
+}
+
+// Contact extraction actions
+export async function extractContactsFromAllPropertiesAction() {
+    const { extractContactsFromAllPropertiesServer } = await import('@/lib/contact-extraction');
+    return await extractContactsFromAllPropertiesServer();
+}
+
+export async function updatePropertyWithExtractedContactsAction(propertyId: string) {
+    const { updatePropertyWithExtractedContactsServer } = await import('@/lib/contact-extraction');
+    return await updatePropertyWithExtractedContactsServer(propertyId);
 }
