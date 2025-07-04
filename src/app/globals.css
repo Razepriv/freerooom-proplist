@@ -151,3 +151,111 @@ body {
   padding: 40px;
   color: hsl(var(--muted-foreground));
 }
+
+/* Contact extraction styles */
+.contact-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border: 1px solid hsl(var(--border));
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-badge.phone {
+  background: hsl(142 76% 95%);
+  color: hsl(142 76% 20%);
+  border-color: hsl(142 76% 30%);
+}
+
+.contact-badge.email {
+  background: hsl(214 95% 95%);
+  color: hsl(214 95% 20%);
+  border-color: hsl(214 95% 30%);
+}
+
+.contact-badge.name {
+  background: hsl(280 95% 95%);
+  color: hsl(280 95% 20%);
+  border-color: hsl(280 95% 30%);
+}
+
+.export-filter-card {
+  transition: all 0.2s ease;
+  border: 1px solid hsl(var(--border));
+}
+
+.export-filter-card:hover {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.filter-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  padding: 1rem;
+  border-radius: 8px;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: hsl(var(--primary));
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  margin-top: 0.25rem;
+}
+
+/* Export dialog animations */
+.export-dialog-enter {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.export-dialog-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Loading states */
+.loading-skeleton {
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted-foreground) / 0.1) 50%, hsl(var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Responsive contact display */
+@media (max-width: 768px) {
+  .contact-badge {
+    max-width: 150px;
+    font-size: 10px;
+  }
+  
+  .filter-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}

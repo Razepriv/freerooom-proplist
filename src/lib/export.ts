@@ -1,4 +1,3 @@
-
 "use client";
 
 import { saveAs } from 'file-saver';
@@ -26,9 +25,9 @@ const createNestedObject = (prop: Property) => {
   return {
     main: {
         id: prop.id,
-        title: prop.title,
+        title: prop.enhanced_title || prop.title, // Use enhanced title as primary
+        description: prop.enhanced_description || prop.description, // Use enhanced description as primary
         price: prop.price,
-        description: prop.description,
         property_type: prop.property_type,
         what_do: prop.what_do,
         furnish_type: prop.furnish_type,
@@ -125,8 +124,8 @@ export const downloadCsv = (data: Property[], filename:string) => {
     ];
 
     const csvData = data.map(prop => ({
-        'Title': prop.title,
-        'Content': prop.description,
+        'Title': prop.enhanced_title || prop.title, // Use enhanced title as primary
+        'Content': prop.enhanced_description || prop.description, // Use enhanced description as primary
         'images': (prop.image_urls || []).map(getAbsoluteUrl).join(' | '),
         'Matterport': prop.matterportLink,
         'Categories': prop.what_do,
@@ -199,4 +198,153 @@ export const downloadExcel = (data: Property[], filename: string) => {
   const excelBuffer = write(workbook, { bookType: 'xlsx', type: 'array' });
   const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
   saveAs(blob, `${filename}.xlsx`);
+};
+
+// Enhanced export functions with filtering metadata
+export const downloadFilteredJson = (data: Property[], filename: string, filterInfo?: string) => {
+  const metadata = {
+    exportDate: new Date().toISOString(),
+    totalRecords: data.length,
+    filterApplied: filterInfo || 'No filter applied',
+    data: data.map(createNestedObject)
+  };
+  
+  const jsonString = JSON.stringify(metadata, null, 2);
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  saveAs(blob, `${filename}.json`);
+};
+
+export const downloadFilteredCsv = (data: Property[], filename: string, filterInfo?: string) => {
+    if (data.length === 0) {
+        alert("No data to export.");
+        return;
+    }
+    
+    const csvHeaders = [
+        'Export Info', 'Title', 'Content', 'images', 'Matterport', 'Categories', 'property_a',
+        'property_b', 'property_c', 'property_d', 'property_e', 'property_f',
+        'property_g', 'property_h', 'property_i', 'property_j', 'property_k',
+        'property_l', 'Features', 'Term and Condition', 'Scraped Date'
+    ];
+
+    // Add metadata row
+    const metadataRow = [
+        `Export Date: ${new Date().toLocaleDateString()}, Records: ${data.length}, Filter: ${filterInfo || 'None'}`,
+        ...Array(csvHeaders.length - 1).fill('')
+    ];
+
+    const csvData = data.map(prop => ({
+        'Export Info': '', // Empty for data rows
+        'Title': prop.enhanced_title || prop.title, // Use enhanced title as primary
+        'Content': prop.enhanced_description || prop.description, // Use enhanced description as primary
+        'images': (prop.image_urls || []).map(getAbsoluteUrl).join(' | '),
+        'Matterport': prop.matterportLink,
+        'Categories': prop.what_do,
+        'property_a': prop.bedrooms,
+        'property_b': prop.bathrooms,
+        'property_c': prop.area,
+        'property_d': prop.tenant_type,
+        'property_e': prop.rental_timing,
+        'property_f': prop.furnish_type,
+        'property_g': prop.floor_number,
+        'property_h': prop.permit_number,
+        'property_i': prop.ded_license_number,
+        'property_j': prop.rera_registration_number,
+        'property_k': prop.dld_brn,
+        'property_l': prop.reference_id,
+        'Features': (prop.features || []).join(' | '),
+        'Term and Condition': prop.terms_and_condition,
+        'Scraped Date': new Date(prop.scraped_at).toLocaleDateString(),
+    }));
+
+    const worksheet = utils.json_to_sheet([]);
+    
+    // Add metadata row
+    utils.sheet_add_aoa(worksheet, [metadataRow], { origin: 'A1' });
+    
+    // Add headers
+    utils.sheet_add_aoa(worksheet, [csvHeaders], { origin: 'A2' });
+    
+    // Add description row
+    const descriptionRow = [
+        'Filter/Export Info',
+        'Property Id',
+        'Description',
+        'image URL 1 | image URL 2 | ...',
+        'Matterport',
+        'Rental type',
+        'Beds property',
+        'Baths property',
+        'Sqft property',
+        'Tenant Type',
+        'Rental Period',
+        'Furnish type',
+        'Floor number',
+        'DLD permit number',
+        'DED license number',
+        'Rera registration number',
+        'DLD BRN',
+        'Reference Id',
+        'Take them with the | pipe SEPERATED',
+        'Term and Condition (Check on website and update)',
+        'Date when property was scraped'
+    ];
+    utils.sheet_add_aoa(worksheet, [descriptionRow], { origin: 'A3' });
+
+    // Add data starting from row 4
+    const dataArray = csvData.map(row => csvHeaders.map(header => row[header as keyof typeof row] || ''));
+    utils.sheet_add_aoa(worksheet, dataArray, { origin: 'A4' });
+
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, 'Properties');
+
+    // Generate CSV output
+    const csvOutput = write(workbook, { bookType: 'csv', type: 'string' });
+    const blob = new Blob([csvOutput], { type: 'text/csv;charset=utf-8;' });
+    saveAs(blob, `${filename}.csv`);
+};
+
+export const downloadFilteredExcel = (data: Property[], filename: string, filterInfo?: string) => {
+  const flattenedData = data.map(prop => flattenObject(createNestedObject(prop)));
+
+  if (flattenedData.length === 0) {
+      alert("No data to export.");
+      return;
+  }
+
+  // Add metadata to each row
+  const enhancedData = flattenedData.map((row, index) => ({
+    export_date: new Date().toISOString(),
+    record_number: index + 1,
+    total_records: data.length,
+    filter_applied: filterInfo || 'No filter applied',
+    ...row
+  }));
+  
+  const worksheet = utils.json_to_sheet(enhancedData);
+  const workbook = utils.book_new();
+  utils.book_append_sheet(workbook, worksheet, 'Properties');
+
+  // Generate XLSX output
+  const excelBuffer = write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+  saveAs(blob, `${filename}.xlsx`);
+};
+
+// Utility function to generate filename with date range
+export const generateFilteredFilename = (baseFilename: string, startDate?: string, endDate?: string, additionalFilter?: string): string => {
+  const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+  let filename = `${baseFilename}_${timestamp}`;
+  
+  if (startDate || endDate) {
+    const start = startDate ? new Date(startDate).toISOString().split('T')[0] : 'all';
+    const end = endDate ? new Date(endDate).toISOString().split('T')[0] : 'all';
+    filename += `_${start}_to_${end}`;
+  }
+  
+  if (additionalFilter) {
+    filename += `_${additionalFilter.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  }
+  
+  return filename;
 };

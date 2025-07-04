@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "fr-toolv1",
+    "testing v1": "fr-toolv1"
+  },
+  "targets": {},
+  "etags": {}
+}
