@@ -1,49 +1,26 @@
 'use server';
 
-import { promises as fs } from 'fs';
-import path from 'path';
 import { type Property, type HistoryEntry } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
+import { getDatabase } from '@/lib/database-adapter';
 
-const dbPath = path.join(process.cwd(), 'data/properties.json');
-const historyPath = path.join(process.cwd(), 'data/history.json');
-
-async function readJsonFile<T>(filePath: string): Promise<T[]> {
-    try {
-        const data = await fs.readFile(filePath, 'utf-8');
-        return JSON.parse(data) as T[];
-    } catch (error: any) {
-        if (error.code === 'ENOENT') {
-            return []; // File doesn't exist, return empty array
-        }
-        console.error(`Error reading or parsing JSON file at ${filePath}:`, error);
-        throw new Error(`Could not read data from ${filePath}.`);
-    }
-}
-
-async function writeJsonFile<T>(filePath: string, data: T[]): Promise<void> {
-    try {
-        await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
-    } catch (error) {
-        console.error(`Error writing JSON file to ${filePath}:`, error);
-        throw new Error(`Could not save data to ${filePath}.`);
-    }
-}
+// Get database instance
+const database = getDatabase();
 
 export async function getDb(): Promise<Property[]> {
-    return await readJsonFile<Property>(dbPath);
+    return await database.getAllProperties();
 }
 
 export async function getHistory(): Promise<HistoryEntry[]> {
-    return await readJsonFile<HistoryEntry>(historyPath);
+    return await database.getAllHistory();
 }
 
 export async function savePropertiesToDb(newProperties: Property[]): Promise<void> {
-    const db = await getDb();
+    const existingProperties = await database.getAllProperties();
     
     // Create multiple keys for more comprehensive duplicate detection
     const existingKeys = new Set<string>();
-    db.forEach(p => {
+    existingProperties.forEach(p => {
         // Original method - URL + title combination
         existingKeys.add(`${p.original_url}::${p.original_title}`);
         
@@ -125,95 +102,63 @@ export async function savePropertiesToDb(newProperties: Property[]): Promise<voi
     }
 
     console.log(`Saving ${uniqueNewProperties.length} new properties out of ${newProperties.length} processed properties.`);
-    const updatedDb = [...uniqueNewProperties, ...db];
-    await writeJsonFile(dbPath, updatedDb);
+    const updatedProperties = [...uniqueNewProperties, ...existingProperties];
+    await database.saveProperties(updatedProperties);
     revalidatePath('/database');
 }
 
 
 export async function updatePropertyInDb(updatedProperty: Property): Promise<void> {
-    const db = await getDb();
-    const index = db.findIndex(p => p.id === updatedProperty.id);
-    if (index > -1) {
-        db[index] = updatedProperty;
-        await writeJsonFile(dbPath, db);
-        revalidatePath('/database');
-    } else {
-        throw new Error('Property not found for updating.');
-    }
+    await database.updateProperty(updatedProperty);
+    revalidatePath('/database');
 }
 
 
 export async function deletePropertyFromDb(propertyId: string): Promise<void> {
-    const db = await getDb();
-    const updatedDb = db.filter(p => p.id !== propertyId);
-    
-    if (db.length === updatedDb.length) {
-        // This could happen if called multiple times quickly. Not a critical error.
-        console.warn(`Property with id ${propertyId} not found for deletion, it might have been already deleted.`);
-    }
-
-    await writeJsonFile(dbPath, updatedDb);
+    await database.deleteProperty(propertyId);
     revalidatePath('/database');
 }
 
 export async function bulkDeleteProperties(propertyIds: string[]): Promise<{ deletedCount: number; notFoundCount: number }> {
-    const db = await getDb();
-    const idsSet = new Set(propertyIds);
-    const updatedDb = db.filter(p => !idsSet.has(p.id));
-    
-    const deletedCount = db.length - updatedDb.length;
-    const notFoundCount = propertyIds.length - deletedCount;
-    
-    await writeJsonFile(dbPath, updatedDb);
-    revalidatePath('/database');
-    
-    return { deletedCount, notFoundCount };
+    return await database.bulkDeleteProperties(propertyIds);
 }
 
 export async function deleteAllProperties(): Promise<number> {
-    const db = await getDb();
-    const count = db.length;
+    const properties = await database.getAllProperties();
+    const count = properties.length;
     
-    await writeJsonFile(dbPath, []);
+    await database.saveProperties([]);
     revalidatePath('/database');
     
     return count;
 }
 
 export async function deleteFilteredProperties(filter: ExportFilter): Promise<{ deletedCount: number; remainingCount: number }> {
-    const db = await getDb();
+    const allProperties = await database.getAllProperties();
     const filteredProperties = await getFilteredProperties(filter);
     const filteredIds = new Set(filteredProperties.map(p => p.id));
     
-    const updatedDb = db.filter(p => !filteredIds.has(p.id));
-    const deletedCount = db.length - updatedDb.length;
+    const remainingProperties = allProperties.filter(p => !filteredIds.has(p.id));
+    const deletedCount = allProperties.length - remainingProperties.length;
     
-    await writeJsonFile(dbPath, updatedDb);
+    await database.saveProperties(remainingProperties);
     revalidatePath('/database');
     
-    return { deletedCount, remainingCount: updatedDb.length };
+    return { deletedCount, remainingCount: remainingProperties.length };
 }
 
 export async function saveHistoryEntry(entry: Omit<HistoryEntry, 'id' | 'date'>): Promise<void> {
-    const history = await getHistory();
-    const newEntry: HistoryEntry = {
-        ...entry,
-        id: `hist-${Date.now()}`,
-        date: new Date().toISOString()
-    };
-    history.unshift(newEntry);
-    await writeJsonFile(historyPath, history.slice(0, 50)); // Keep history to last 50 entries
+    await database.saveHistoryEntry(entry);
     revalidatePath('/history');
 }
 
 export async function clearDb(): Promise<void> {
-    await writeJsonFile(dbPath, []);
+    await database.saveProperties([]);
     revalidatePath('/database');
 }
 
 export async function clearHistory(): Promise<void> {
-    await writeJsonFile(historyPath, []);
+    await database.clearHistory();
     revalidatePath('/history');
 }
 
@@ -229,7 +174,7 @@ export interface ExportFilter {
 }
 
 export async function getFilteredProperties(filter?: ExportFilter): Promise<Property[]> {
-    const properties = await getDb();
+    const properties = await database.getAllProperties();
     
     if (!filter) {
         return properties;
@@ -285,7 +230,7 @@ export async function getFilteredProperties(filter?: ExportFilter): Promise<Prop
 }
 
 export async function getFilteredHistory(filter?: { startDate?: string; endDate?: string; type?: string }): Promise<HistoryEntry[]> {
-    const history = await getHistory();
+    const history = await database.getAllHistory();
     
     if (!filter) {
         return history;
@@ -323,7 +268,7 @@ export async function getExportStats(filter?: ExportFilter): Promise<{
     propertyTypes: { [key: string]: number };
     locations: { [key: string]: number };
 }> {
-    const allProperties = await getDb();
+    const allProperties = await database.getAllProperties();
     const filteredProperties = await getFilteredProperties(filter);
 
     // Calculate date range

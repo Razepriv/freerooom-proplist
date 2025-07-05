@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import type { HistoryEntry } from '@/app/actions';
+import type { HistoryEntry } from '@/lib/types';
 import { format } from 'date-fns';
 
 interface HistoryTableProps {

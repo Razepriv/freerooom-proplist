@@ -26,11 +26,54 @@ const normalizeCityName = (cityString: string): string => {
   
   const city = cityString.toLowerCase().trim();
   
-  // Define city mappings - add common variations and neighborhoods
+  // Check for specific emirate names first (most specific matches)
+  if (city.includes('ajman') || 
+      city.includes('ajman marina') ||
+      city.includes('al nuaimiya') || 
+      city.includes('al rashidiya') || 
+      city.includes('al jurf') || 
+      city.includes('al rumailah') || 
+      city.includes('corniche ajman')) {
+    return 'ajman';
+  }
+  
+  if (city.includes('sharjah') || 
+      city.includes('al nahda') || 
+      city.includes('al majaz') || 
+      city.includes('al qasba') || 
+      city.includes('al taawun') || 
+      city.includes('al khan') || 
+      city.includes('rolla') || 
+      city.includes('al nud') || 
+      city.includes('muwaileh') || 
+      city.includes('university city')) {
+    return 'sharjah';
+  }
+  
+  if (city.includes('abu dhabi') || 
+      city.includes('abudhabi') || 
+      city.includes('khalifa city') || 
+      city.includes('al reem') || 
+      city.includes('yas island') || 
+      city.includes('saadiyat') || 
+      city.includes('corniche') || 
+      city.includes('marina village') || 
+      city.includes('al raha') || 
+      city.includes('masdar') || 
+      city.includes('al reef') || 
+      city.includes('mohammed bin zayed') || 
+      city.includes('mbz') || 
+      city.includes('al shamkha') || 
+      city.includes('al bahia')) {
+    return 'abu dhabi';
+  }
+  
+  // Define city mappings - Dubai areas (most general, checked last)
   if (city.includes('dubai') || 
       city.includes('business bay') || 
       city.includes('downtown') || 
-      city.includes('marina') || 
+      (city.includes('marina') && city.includes('dubai')) ||
+      city.includes('dubai marina') ||
       city.includes('jlt') || 
       city.includes('jumeirah') || 
       city.includes('deira') || 
@@ -57,46 +100,6 @@ const normalizeCityName = (cityString: string): string => {
       city.includes('emirates hills') || 
       city.includes('arabian ranches')) {
     return 'dubai';
-  }
-  
-  if (city.includes('abu dhabi') || 
-      city.includes('abudhabi') || 
-      city.includes('khalifa city') || 
-      city.includes('al reem') || 
-      city.includes('yas island') || 
-      city.includes('saadiyat') || 
-      city.includes('corniche') || 
-      city.includes('marina village') || 
-      city.includes('al raha') || 
-      city.includes('masdar') || 
-      city.includes('al reef') || 
-      city.includes('mohammed bin zayed') || 
-      city.includes('mbz') || 
-      city.includes('al shamkha') || 
-      city.includes('al bahia')) {
-    return 'abu dhabi';
-  }
-  
-  if (city.includes('sharjah') || 
-      city.includes('al nahda') || 
-      city.includes('al majaz') || 
-      city.includes('al qasba') || 
-      city.includes('al taawun') || 
-      city.includes('al khan') || 
-      city.includes('rolla') || 
-      city.includes('al nud') || 
-      city.includes('muwaileh') || 
-      city.includes('university city')) {
-    return 'sharjah';
-  }
-  
-  if (city.includes('ajman') || 
-      city.includes('al nuaimiya') || 
-      city.includes('al rashidiya') || 
-      city.includes('al jurf') || 
-      city.includes('al rumailah') || 
-      city.includes('corniche ajman')) {
-    return 'ajman';
   }
   
   // Default to Dubai if no match found (since most properties are likely in Dubai)

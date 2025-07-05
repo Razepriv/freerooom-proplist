@@ -1,6 +1,4 @@
-import type { IronSessionData } from 'iron-session';
-
-export interface SessionData extends IronSessionData {
+export interface SessionData {
   username?: string;
   isLoggedIn: boolean;
 }
