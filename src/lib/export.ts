@@ -4,6 +4,105 @@ import { saveAs } from 'file-saver';
 import { utils, write } from 'xlsx';
 import type { Property } from '@/lib/types';
 
+// Helper function to extract numeric value from price (remove AED, commas, etc.)
+const extractPriceNumber = (priceString: string): string => {
+  if (!priceString) return '';
+  // Remove AED, commas, spaces, and any non-numeric characters except decimal points
+  const numericPrice = priceString.replace(/[^0-9.]/g, '');
+  return numericPrice || '';
+};
+
+// Helper function to extract numeric value from area (remove sq ft, sqft, etc.)
+const extractAreaNumber = (areaString: string): string => {
+  if (!areaString) return '';
+  // Remove sq ft, sqft, square feet, commas, spaces, and any non-numeric characters except decimal points
+  const numericArea = areaString.replace(/sq\s*ft|sqft|square\s*feet|[^0-9.]/gi, '');
+  return numericArea || '';
+};
+
+// Helper function to normalize city names to standard categories
+const normalizeCityName = (cityString: string): string => {
+  if (!cityString) return '';
+  
+  const city = cityString.toLowerCase().trim();
+  
+  // Define city mappings - add common variations and neighborhoods
+  if (city.includes('dubai') || 
+      city.includes('business bay') || 
+      city.includes('downtown') || 
+      city.includes('marina') || 
+      city.includes('jlt') || 
+      city.includes('jumeirah') || 
+      city.includes('deira') || 
+      city.includes('bur dubai') || 
+      city.includes('jbr') || 
+      city.includes('palm') || 
+      city.includes('silicon oasis') || 
+      city.includes('motor city') || 
+      city.includes('sports city') || 
+      city.includes('international city') || 
+      city.includes('dragon mart') || 
+      city.includes('discovery gardens') || 
+      city.includes('jvc') || 
+      city.includes('dubailand') || 
+      city.includes('mirdif') || 
+      city.includes('festival city') || 
+      city.includes('creek') || 
+      city.includes('karama') || 
+      city.includes('satwa') || 
+      city.includes('al barsha') || 
+      city.includes('green community') || 
+      city.includes('the springs') || 
+      city.includes('the meadows') || 
+      city.includes('emirates hills') || 
+      city.includes('arabian ranches')) {
+    return 'dubai';
+  }
+  
+  if (city.includes('abu dhabi') || 
+      city.includes('abudhabi') || 
+      city.includes('khalifa city') || 
+      city.includes('al reem') || 
+      city.includes('yas island') || 
+      city.includes('saadiyat') || 
+      city.includes('corniche') || 
+      city.includes('marina village') || 
+      city.includes('al raha') || 
+      city.includes('masdar') || 
+      city.includes('al reef') || 
+      city.includes('mohammed bin zayed') || 
+      city.includes('mbz') || 
+      city.includes('al shamkha') || 
+      city.includes('al bahia')) {
+    return 'abu dhabi';
+  }
+  
+  if (city.includes('sharjah') || 
+      city.includes('al nahda') || 
+      city.includes('al majaz') || 
+      city.includes('al qasba') || 
+      city.includes('al taawun') || 
+      city.includes('al khan') || 
+      city.includes('rolla') || 
+      city.includes('al nud') || 
+      city.includes('muwaileh') || 
+      city.includes('university city')) {
+    return 'sharjah';
+  }
+  
+  if (city.includes('ajman') || 
+      city.includes('al nuaimiya') || 
+      city.includes('al rashidiya') || 
+      city.includes('al jurf') || 
+      city.includes('al rumailah') || 
+      city.includes('corniche ajman')) {
+    return 'ajman';
+  }
+  
+  // Default to Dubai if no match found (since most properties are likely in Dubai)
+  return 'dubai';
+};
+
 const getAbsoluteUrl = (url: string) => {
   if (!url) return '';
   if (url.startsWith('http')) {
@@ -27,7 +126,7 @@ const createNestedObject = (prop: Property) => {
         id: prop.id,
         title: prop.enhanced_title || prop.title, // Use enhanced title as primary
         description: prop.enhanced_description || prop.description, // Use enhanced description as primary
-        price: prop.price,
+        price: extractPriceNumber(prop.price), // Extract only numeric value
         property_type: prop.property_type,
         what_do: prop.what_do,
         furnish_type: prop.furnish_type,
@@ -38,14 +137,14 @@ const createNestedObject = (prop: Property) => {
     },
     location: {
         location: prop.location,
-        city: prop.city,
+        city: normalizeCityName(prop.city), // Use normalized city name
         county: prop.county,
         neighborhood: prop.neighborhood,
     },
     property_details: {
         bedrooms: prop.bedrooms,
         bathrooms: prop.bathrooms,
-        area: prop.area,
+        area: extractAreaNumber(prop.area), // Extract only numeric value
         floor_number: prop.floor_number,
         building_information: prop.building_information,
     },
@@ -117,7 +216,7 @@ export const downloadCsv = (data: Property[], filename:string) => {
     }
     
     const csvHeaders = [
-        'Title', 'Content', 'images', 'Matterport', 'Categories', 'property_a',
+        'Title', 'Content', 'images', 'Matterport', 'Categories', 'Price', 'City', 'property_a',
         'property_b', 'property_c', 'property_d', 'property_e', 'property_f',
         'property_g', 'property_h', 'property_i', 'property_j', 'property_k',
         'property_l', 'Features', 'Term and Condition'
@@ -129,9 +228,11 @@ export const downloadCsv = (data: Property[], filename:string) => {
         'images': (prop.image_urls || []).map(getAbsoluteUrl).join(' | '),
         'Matterport': prop.matterportLink,
         'Categories': prop.what_do,
+        'Price': extractPriceNumber(prop.price), // Extract only numeric value
+        'City': normalizeCityName(prop.city), // Use normalized city name
         'property_a': prop.bedrooms,
         'property_b': prop.bathrooms,
-        'property_c': prop.area,
+        'property_c': extractAreaNumber(prop.area), // Extract only numeric value
         'property_d': prop.tenant_type,
         'property_e': prop.rental_timing,
         'property_f': prop.furnish_type,
@@ -154,9 +255,11 @@ export const downloadCsv = (data: Property[], filename:string) => {
         'images': 'image URL 1 | image URL 2 | ...',
         'Matterport': 'Matterport',
         'Categories': 'Rental type',
+        'Price': 'Price (numbers only)',
+        'City': 'City (ajman/sharjah/dubai/abu dhabi)',
         'property_a': 'Beds property',
         'property_b': 'Baths property',
-        'property_c': 'Sqft property',
+        'property_c': 'Sqft property (numbers only)',
         'property_d': 'Tenant Type',
         'property_e': 'Rental Period',
         'property_f': 'Furnish type',
@@ -221,7 +324,7 @@ export const downloadFilteredCsv = (data: Property[], filename: string, filterIn
     }
     
     const csvHeaders = [
-        'Export Info', 'Title', 'Content', 'images', 'Matterport', 'Categories', 'property_a',
+        'Export Info', 'Title', 'Content', 'images', 'Matterport', 'Categories', 'Price', 'City', 'property_a',
         'property_b', 'property_c', 'property_d', 'property_e', 'property_f',
         'property_g', 'property_h', 'property_i', 'property_j', 'property_k',
         'property_l', 'Features', 'Term and Condition', 'Scraped Date'
@@ -240,9 +343,11 @@ export const downloadFilteredCsv = (data: Property[], filename: string, filterIn
         'images': (prop.image_urls || []).map(getAbsoluteUrl).join(' | '),
         'Matterport': prop.matterportLink,
         'Categories': prop.what_do,
+        'Price': extractPriceNumber(prop.price), // Extract only numeric value
+        'City': normalizeCityName(prop.city), // Use normalized city name
         'property_a': prop.bedrooms,
         'property_b': prop.bathrooms,
-        'property_c': prop.area,
+        'property_c': extractAreaNumber(prop.area), // Extract only numeric value
         'property_d': prop.tenant_type,
         'property_e': prop.rental_timing,
         'property_f': prop.furnish_type,
@@ -273,9 +378,11 @@ export const downloadFilteredCsv = (data: Property[], filename: string, filterIn
         'image URL 1 | image URL 2 | ...',
         'Matterport',
         'Rental type',
+        'Price (numbers only)',
+        'City (ajman/sharjah/dubai/abu dhabi)',
         'Beds property',
         'Baths property',
-        'Sqft property',
+        'Sqft property (numbers only)',
         'Tenant Type',
         'Rental Period',
         'Furnish type',
