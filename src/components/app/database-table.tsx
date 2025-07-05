@@ -10,6 +10,7 @@ import { type Property } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { Checkbox } from '../ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,8 +27,11 @@ import { PropertyImageGallery } from './property-image-gallery';
 
 interface DatabaseTableProps {
   properties: Property[];
+  selectedProperties?: Property[];
   onEdit: (property: Property) => void;
   onDelete: (propertyId: string) => void;
+  onSelectProperty?: (property: Property, selected: boolean) => void;
+  onSelectAll?: (selected: boolean) => void;
 }
 
 interface DetailItemProps {
@@ -67,8 +71,34 @@ const DetailItem: React.FC<DetailItemProps> = ({ icon: Icon, label, value }) => 
 };
 
 
-export function DatabaseTable({ properties, onEdit, onDelete }: DatabaseTableProps) {
+export function DatabaseTable({ 
+  properties, 
+  selectedProperties = [], 
+  onEdit, 
+  onDelete, 
+  onSelectProperty, 
+  onSelectAll 
+}: DatabaseTableProps) {
   const [deleteCandidateId, setDeleteCandidateId] = useState<string | null>(null);
+
+  const isPropertySelected = (property: Property) => {
+    return selectedProperties.some(p => p.id === property.id);
+  };
+
+  const allSelected = properties.length > 0 && properties.every(p => isPropertySelected(p));
+  const someSelected = selectedProperties.length > 0 && !allSelected;
+
+  const handleSelectAll = (checked: boolean) => {
+    if (onSelectAll) {
+      onSelectAll(checked);
+    }
+  };
+
+  const handleSelectProperty = (property: Property, checked: boolean) => {
+    if (onSelectProperty) {
+      onSelectProperty(property, checked);
+    }
+  };
 
   if (properties.length === 0) {
     return (
@@ -82,11 +112,44 @@ export function DatabaseTable({ properties, onEdit, onDelete }: DatabaseTablePro
 
   return (
     <>
+      {onSelectProperty && onSelectAll && (
+        <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/30 mb-4">
+          <Checkbox
+            checked={allSelected}
+            onCheckedChange={handleSelectAll}
+            className={someSelected ? "data-[state=checked]:bg-primary/50" : ""}
+          />
+          <span className="text-sm">
+            {selectedProperties.length > 0 
+              ? `${selectedProperties.length} properties selected`
+              : 'Select all properties'
+            }
+          </span>
+          {selectedProperties.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => handleSelectAll(false)}
+              className="ml-auto"
+            >
+              Clear selection
+            </Button>
+          )}
+        </div>
+      )}
       <Accordion type="single" collapsible className="w-full space-y-3">
         {properties.map((prop) => (
           <AccordionItem value={prop.id} key={prop.id} className="border rounded-lg bg-card overflow-hidden transition-all hover:border-primary/20">
             <AccordionTrigger className="p-4 hover:no-underline [&[data-state=open]>div>div>svg.chevron]:rotate-180">
               <div className="flex items-center justify-between gap-4 w-full text-left">
+                  {onSelectProperty && (
+                    <Checkbox
+                      checked={isPropertySelected(prop)}
+                      onCheckedChange={(checked) => handleSelectProperty(prop, checked as boolean)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mr-2"
+                    />
+                  )}
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                       <PropertyImage
                         src={prop.image_url || 'https://placehold.co/600x400.png'}
@@ -111,9 +174,19 @@ export function DatabaseTable({ properties, onEdit, onDelete }: DatabaseTablePro
                       <p className="font-semibold text-lg text-primary text-right hidden md:block">{prop.price}</p>
                       <DropdownMenu>
                           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <div 
+                              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-8 w-8 cursor-pointer"
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }
+                              }}
+                            >
                               <MoreVertical className="h-4 w-4" />
-                            </Button>
+                            </div>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                               <DropdownMenuItem onSelect={() => onEdit(prop)}>

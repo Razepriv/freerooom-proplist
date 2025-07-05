@@ -195,6 +195,21 @@ export async function deleteProperty(propertyId: string) {
     await deletePropertyFromDb(propertyId);
 }
 
+export async function bulkDeleteProperties(propertyIds: string[]) {
+    const { bulkDeleteProperties: bulkDelete } = await import('@/lib/db');
+    return await bulkDelete(propertyIds);
+}
+
+export async function deleteAllProperties() {
+    const { deleteAllProperties: deleteAll } = await import('@/lib/db');
+    return await deleteAll();
+}
+
+export async function deleteFilteredProperties(filter: import('@/lib/db').ExportFilter) {
+    const { deleteFilteredProperties: deleteFiltered } = await import('@/lib/db');
+    return await deleteFiltered(filter);
+}
+
 // Export-related server actions
 export async function getFilteredPropertiesAction(filter: import('@/lib/db').ExportFilter) {
     const { getFilteredProperties } = await import('@/lib/db');

@@ -7,6 +7,8 @@ import { DatabaseTable } from '@/components/app/database-table';
 import { EditDialog } from '@/components/app/edit-dialog';
 import { ExportDialog } from '@/components/app/export-dialog';
 import { ContactExtractionDialog } from '@/components/app/contact-extraction-dialog';
+import { DashboardStats } from '@/components/app/dashboard-stats';
+import { BulkDeleteDialog } from '@/components/app/bulk-delete-dialog';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -23,6 +25,7 @@ export function DatabasePage({ initialProperties }: DatabasePageProps) {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [selectedProperties, setSelectedProperties] = useState<Property[]>([]);
   
   // Add filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,8 +103,30 @@ export function DatabasePage({ initialProperties }: DatabasePageProps) {
     setProperties(prev => prev.map(p => p.id === updatedProperty.id ? updatedProperty : p));
   };
 
+  const handlePropertiesDeleted = (deletedCount: number) => {
+    // Refresh the properties from the server since we don't know which ones were deleted
+    window.location.reload();
+  };
+
+  const handleSelectProperty = (property: Property, selected: boolean) => {
+    if (selected) {
+      setSelectedProperties(prev => [...prev, property]);
+    } else {
+      setSelectedProperties(prev => prev.filter(p => p.id !== property.id));
+    }
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      setSelectedProperties(filteredProperties);
+    } else {
+      setSelectedProperties([]);
+    }
+  };
+
   return (
     <>
+      <DashboardStats properties={properties} />
       <div className="flex flex-col md:flex-row justify-between items-center mb-4">
         <div className="text-sm text-muted-foreground mb-2 md:mb-0">
           {filteredProperties.length} of {properties.length} properties
@@ -115,6 +140,11 @@ export function DatabasePage({ initialProperties }: DatabasePageProps) {
           <Button variant="outline" onClick={() => downloadCsv(filteredProperties, 'database_export')}>Quick CSV</Button>
           <Button variant="outline" onClick={() => downloadExcel(filteredProperties, 'database_export')}>Quick Excel</Button>
           <ExportDialog allProperties={properties} />
+          <BulkDeleteDialog 
+            allProperties={properties} 
+            selectedProperties={selectedProperties}
+            onPropertiesDeleted={handlePropertiesDeleted}
+          />
         </div>
       </div>
       <div className="flex flex-col md:flex-row gap-4 mb-4 p-4 border rounded-lg bg-muted/20">
@@ -159,7 +189,14 @@ export function DatabasePage({ initialProperties }: DatabasePageProps) {
         )}
       </div>
       {isPending && <div className="flex justify-center items-center my-4"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
-      <DatabaseTable properties={filteredProperties} onDelete={handleDelete} onEdit={handleEdit} />
+      <DatabaseTable 
+        properties={filteredProperties} 
+        selectedProperties={selectedProperties}
+        onDelete={handleDelete} 
+        onEdit={handleEdit}
+        onSelectProperty={handleSelectProperty}
+        onSelectAll={handleSelectAll}
+      />
       <EditDialog
         isOpen={isEditDialogOpen}
         property={selectedProperty}

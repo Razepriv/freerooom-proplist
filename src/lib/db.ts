@@ -157,6 +157,43 @@ export async function deletePropertyFromDb(propertyId: string): Promise<void> {
     revalidatePath('/database');
 }
 
+export async function bulkDeleteProperties(propertyIds: string[]): Promise<{ deletedCount: number; notFoundCount: number }> {
+    const db = await getDb();
+    const idsSet = new Set(propertyIds);
+    const updatedDb = db.filter(p => !idsSet.has(p.id));
+    
+    const deletedCount = db.length - updatedDb.length;
+    const notFoundCount = propertyIds.length - deletedCount;
+    
+    await writeJsonFile(dbPath, updatedDb);
+    revalidatePath('/database');
+    
+    return { deletedCount, notFoundCount };
+}
+
+export async function deleteAllProperties(): Promise<number> {
+    const db = await getDb();
+    const count = db.length;
+    
+    await writeJsonFile(dbPath, []);
+    revalidatePath('/database');
+    
+    return count;
+}
+
+export async function deleteFilteredProperties(filter: ExportFilter): Promise<{ deletedCount: number; remainingCount: number }> {
+    const db = await getDb();
+    const filteredProperties = await getFilteredProperties(filter);
+    const filteredIds = new Set(filteredProperties.map(p => p.id));
+    
+    const updatedDb = db.filter(p => !filteredIds.has(p.id));
+    const deletedCount = db.length - updatedDb.length;
+    
+    await writeJsonFile(dbPath, updatedDb);
+    revalidatePath('/database');
+    
+    return { deletedCount, remainingCount: updatedDb.length };
+}
 
 export async function saveHistoryEntry(entry: Omit<HistoryEntry, 'id' | 'date'>): Promise<void> {
     const history = await getHistory();
@@ -198,19 +235,12 @@ export async function getFilteredProperties(filter?: ExportFilter): Promise<Prop
         return properties;
     }
 
-    console.log('🔍 Filtering properties with filter:', filter);
-    console.log('📊 Total properties before filtering:', properties.length);
-
-    return properties.filter(property => {
+    const filteredResults = properties.filter(property => {
         // Date filtering based on scraped_at
         if (filter.startDate) {
             const propertyDate = new Date(property.scraped_at);
             const startDate = new Date(filter.startDate);
-            console.log(`📅 Checking start date: property ${property.scraped_at} >= filter ${filter.startDate}`);
-            if (propertyDate < startDate) {
-                console.log(`❌ Property ${property.id} filtered out by start date`);
-                return false;
-            }
+            if (propertyDate < startDate) return false;
         }
         
         if (filter.endDate) {
@@ -218,16 +248,11 @@ export async function getFilteredProperties(filter?: ExportFilter): Promise<Prop
             const endDate = new Date(filter.endDate);
             // Set end date to end of day
             endDate.setHours(23, 59, 59, 999);
-            console.log(`📅 Checking end date: property ${property.scraped_at} <= filter ${filter.endDate}`);
-            if (propertyDate > endDate) {
-                console.log(`❌ Property ${property.id} filtered out by end date`);
-                return false;
-            }
+            if (propertyDate > endDate) return false;
         }
 
         // Property type filtering
         if (filter.propertyType && property.property_type.toLowerCase() !== filter.propertyType.toLowerCase()) {
-            console.log(`❌ Property ${property.id} filtered out by type: ${property.property_type} !== ${filter.propertyType}`);
             return false;
         }
 
@@ -255,6 +280,8 @@ export async function getFilteredProperties(filter?: ExportFilter): Promise<Prop
 
         return true;
     });
+    
+    return filteredResults;
 }
 
 export async function getFilteredHistory(filter?: { startDate?: string; endDate?: string; type?: string }): Promise<HistoryEntry[]> {
