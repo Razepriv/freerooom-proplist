@@ -33,6 +33,10 @@ env:
     value: 1:540549710523:web:2d338f8b8ccd6e04019f9e
   - variable: GEMINI_API_KEY
     value: AIzaSyCBCVpX71GSGC7J0iRh_qCBwn74BXEU86A
+  - variable: AUTO_ENHANCE_ENABLED
+    value: "true"
+  - variable: AUTO_SAVE_ENABLED
+    value: "false"
   - variable: ENABLE_BULK_DELETE
     value: "true"
   - variable: ENABLE_EXPORT

@@ -460,9 +460,17 @@ export function createDatabaseAdapter(): DatabaseAdapter {
     STORAGE_TYPE: ENV_CONFIG.STORAGE_TYPE,
     isServerless: ENV_CONFIG.isServerless(),
     isDevelopment: ENV_CONFIG.isDevelopment(),
+    isProduction: ENV_CONFIG.isProduction(),
     FIREBASE_PROJECT_ID: ENV_CONFIG.NEXT_PUBLIC_FIREBASE_PROJECT_ID
   });
   
+  // Force Firestore adapter if we have Firebase configuration and production storage type
+  if (ENV_CONFIG.STORAGE_TYPE === 'database' && ENV_CONFIG.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+    console.log('📁 Using Firestore database adapter (forced for database storage type)');
+    return new FirestoreAdapter();
+  }
+  
+  // Legacy logic for other cases
   if (ENV_CONFIG.isServerless() || ENV_CONFIG.STORAGE_TYPE === 'memory') {
     console.log('📁 Using In-Memory database adapter');
     return new InMemoryAdapter();
@@ -473,8 +481,8 @@ export function createDatabaseAdapter(): DatabaseAdapter {
     return new FilesystemAdapter();
   }
   
-  // Add database storage types
-  if (ENV_CONFIG.STORAGE_TYPE === 'database' || ENV_CONFIG.STORAGE_TYPE === 'firestore') {
+  // Add database storage types (legacy)
+  if (ENV_CONFIG.STORAGE_TYPE === 'firestore') {
     if (ENV_CONFIG.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
       console.log('📁 Using Firestore database adapter');
       return new FirestoreAdapter();
