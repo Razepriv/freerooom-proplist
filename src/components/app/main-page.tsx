@@ -20,7 +20,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { useToast } from "@/hooks/use-toast"
-import { scrapeUrl, scrapeHtml, scrapeBulk, saveProperty } from '@/lib/client-actions-firebase';
+import { scrapeUrl, scrapeHtml, scrapeBulk, saveProperty } from '@/app/actions';
 import { type Property } from '@/lib/types';
 import { ResultsTable } from './results-table';
 import { downloadJson, downloadCsv, downloadExcel } from '@/lib/export';
@@ -97,8 +97,7 @@ export function MainPage() {
       toast({ variant: "destructive", title: "Input Error", description: "URL list cannot be empty." });
       return;
     }
-    const urlArray = bulkUrls.split('\n').map(url => url.trim()).filter(url => url.length > 0);
-    handleScrape(() => scrapeBulk(urlArray));
+    handleScrape(() => scrapeBulk(bulkUrls));
     setBulkUrls('');
   };
 
