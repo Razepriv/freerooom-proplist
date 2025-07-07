@@ -263,11 +263,19 @@ export async function scrapeBulk(urls: string): Promise<Property[] | null> {
 
 
 export async function saveProperty(property: Property) {
+    console.log('🔍 saveProperty called with:', {
+        id: property.id,
+        title: property.title,
+        url: property.original_url
+    });
+    
     try {
+        console.log('💾 Attempting to save property to database...');
         await savePropertiesToDb([property]);
+        console.log('✅ Property saved successfully');
         return { success: true, message: "Property saved successfully" };
     } catch (error) {
-        console.error("Error saving property:", error);
+        console.error("❌ Error saving property:", error);
         if (error instanceof Error && error.message.includes("already exist")) {
             return { success: false, message: "This property already exists in the database" };
         }

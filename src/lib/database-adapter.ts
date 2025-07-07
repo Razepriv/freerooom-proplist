@@ -449,6 +449,14 @@ class InMemoryAdapter implements DatabaseAdapter {
 
 // Database adapter factory
 export function createDatabaseAdapter(): DatabaseAdapter {
+  console.log(`🔍 Creating database adapter with ENV_CONFIG:`, {
+    NODE_ENV: ENV_CONFIG.NODE_ENV,
+    STORAGE_TYPE: ENV_CONFIG.STORAGE_TYPE,
+    isServerless: ENV_CONFIG.isServerless(),
+    isDevelopment: ENV_CONFIG.isDevelopment(),
+    FIREBASE_PROJECT_ID: ENV_CONFIG.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+  });
+  
   if (ENV_CONFIG.isServerless() || ENV_CONFIG.STORAGE_TYPE === 'memory') {
     console.log('📁 Using In-Memory database adapter');
     return new InMemoryAdapter();

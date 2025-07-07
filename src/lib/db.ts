@@ -16,7 +16,10 @@ export async function getHistory(): Promise<HistoryEntry[]> {
 }
 
 export async function savePropertiesToDb(newProperties: Property[]): Promise<void> {
+    console.log(`🔍 savePropertiesToDb called with ${newProperties.length} properties`);
+    
     const existingProperties = await database.getAllProperties();
+    console.log(`📊 Found ${existingProperties.length} existing properties in database`);
     
     // Create multiple keys for more comprehensive duplicate detection
     const existingKeys = new Set<string>();
@@ -102,9 +105,11 @@ export async function savePropertiesToDb(newProperties: Property[]): Promise<voi
         return; // Nothing to do
     }
 
-    console.log(`Saving ${uniqueNewProperties.length} new properties out of ${newProperties.length} processed properties.`);
-    const updatedProperties = [...uniqueNewProperties, ...existingProperties];
-    await database.saveProperties(updatedProperties);
+    console.log(`💾 Saving ${uniqueNewProperties.length} new properties out of ${newProperties.length} processed properties.`);
+    
+    // Just save the new properties, not all properties
+    await database.saveProperties(uniqueNewProperties);
+    console.log(`✅ Successfully saved ${uniqueNewProperties.length} properties to database`);
     revalidatePath('/database');
 }
 
