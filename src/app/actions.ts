@@ -399,3 +399,111 @@ export async function checkPropertyExists(property: Property): Promise<boolean> 
         return false; // If we can't check, assume it doesn't exist
     }
 }
+
+export async function debugDatabaseConnection() {
+    console.log('🔍 debugDatabaseConnection called');
+    
+    try {
+        // Test environment variables
+        console.log('📊 Environment check:', {
+            NODE_ENV: process.env.NODE_ENV,
+            STORAGE_TYPE: process.env.STORAGE_TYPE,
+            AUTO_SAVE_ENABLED: process.env.AUTO_SAVE_ENABLED,
+            AUTO_ENHANCE_ENABLED: process.env.AUTO_ENHANCE_ENABLED,
+            FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+            FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'SET' : 'NOT_SET',
+        });
+        
+        // Test database adapter selection
+        const { getDatabase } = await import('@/lib/database-adapter');
+        const db = getDatabase();
+        console.log('📊 Database adapter created:', db.constructor.name);
+        
+        // Test database operations
+        console.log('🔍 Testing getAllProperties...');
+        const properties = await db.getAllProperties();
+        console.log(`📊 Found ${properties.length} existing properties`);
+        
+        // Test save operation with a dummy property
+        const testProperty: Property = {
+            id: `test-${Date.now()}`,
+            title: 'Test Property',
+            original_title: 'Test Property',
+            description: 'Test Description',
+            original_description: 'Test Description',
+            enhanced_title: 'Test Property',
+            enhanced_description: 'Test Description',
+            price: '100000',
+            location: 'Test Location',
+            bedrooms: 2,
+            bathrooms: 1,
+            area: '1000 sqft',
+            property_type: 'Test',
+            image_url: 'https://example.com/test.jpg',
+            image_urls: [],
+            scraped_at: new Date().toISOString(),
+            original_url: 'https://test.com',
+            mortgage: '',
+            neighborhood: 'Test',
+            what_do: 'Test',
+            city: 'Test',
+            county: 'Test',
+            tenant_type: '',
+            rental_timing: '',
+            furnish_type: '',
+            floor_number: 1,
+            features: [],
+            terms_and_condition: '',
+            page_link: 'https://test.com',
+            matterportLink: '',
+            validated_information: '',
+            building_information: '',
+            permit_number: '',
+            ded_license_number: '',
+            rera_registration_number: '',
+            reference_id: '',
+            dld_brn: '',
+            listed_by_name: '',
+            listed_by_phone: '',
+            listed_by_email: ''
+        };
+        
+        console.log('🔍 Testing saveProperties...');
+        await db.saveProperties([testProperty]);
+        console.log('✅ Test property saved successfully');
+        
+        // Verify it was saved
+        console.log('🔍 Verifying save...');
+        const updatedProperties = await db.getAllProperties();
+        console.log(`📊 Now have ${updatedProperties.length} properties`);
+        
+        const testFound = updatedProperties.find(p => p.id === testProperty.id);
+        if (testFound) {
+            console.log('✅ Test property found in database');
+            
+            // Clean up test property
+            await db.deleteProperty(testProperty.id);
+            console.log('🧹 Test property cleaned up');
+        } else {
+            console.log('❌ Test property NOT found in database');
+        }
+        
+        return { 
+            success: true, 
+            message: "Database connection test completed successfully",
+            details: {
+                adapter: db.constructor.name,
+                propertyCount: properties.length,
+                testSaved: !!testFound
+            }
+        };
+        
+    } catch (error) {
+        console.error("❌ Database connection test failed:", error);
+        return { 
+            success: false, 
+            message: "Database connection test failed",
+            error: error instanceof Error ? error.message : String(error)
+        };
+    }
+}

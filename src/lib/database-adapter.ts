@@ -192,18 +192,24 @@ class FirestoreAdapter implements DatabaseAdapter {
   async saveProperties(properties: Property[]): Promise<void> {
     if (properties.length === 0) return;
     
+    console.log(`🔍 FirestoreAdapter.saveProperties called with ${properties.length} properties`);
+    
     try {
       const db = await this.getFirestore();
       const { collection, doc, setDoc } = await import('firebase/firestore');
       
+      console.log(`📝 Starting to save ${properties.length} properties to Firestore...`);
+      
       const batch = [];
       for (const property of properties) {
+        console.log(`📝 Preparing to save property: ${property.id} - "${property.title}"`);
         const docRef = doc(collection(db, this.collectionName), property.id);
         batch.push(setDoc(docRef, property));
       }
       
+      console.log(`🚀 Executing ${batch.length} Firestore operations...`);
       await Promise.all(batch);
-      console.log(`✅ Saved ${properties.length} properties to Firestore`);
+      console.log(`✅ Successfully saved ${properties.length} properties to Firestore`);
     } catch (error) {
       console.error('❌ Error saving properties to Firestore:', error);
       throw error;
@@ -485,8 +491,13 @@ export function createDatabaseAdapter(): DatabaseAdapter {
 let dbInstance: DatabaseAdapter | null = null;
 
 export function getDatabase(): DatabaseAdapter {
+  console.log('🔍 getDatabase() called');
   if (!dbInstance) {
+    console.log('🏗️ Creating new database adapter instance...');
     dbInstance = createDatabaseAdapter();
+    console.log('✅ Database adapter instance created');
+  } else {
+    console.log('♻️ Reusing existing database adapter instance');
   }
   return dbInstance;
 }
