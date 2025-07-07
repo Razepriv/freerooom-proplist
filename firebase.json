@@ -1,18 +1,10 @@
 {
-  "hosting": {
-    "public": "public_deploy",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
+  "apphosting": {
+    "source": ".",
+    "env": [
       {
-        "source": "**",
-        "function": {
-          "functionId": "nextjs",
-          "region": "us-central1"
-        }
+        "variable": "NODE_ENV",
+        "value": "production"
       }
     ]
   },

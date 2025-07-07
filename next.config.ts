@@ -1,8 +1,15 @@
 import type { NextConfig } from 'next'
+import path from 'path'
 
 const nextConfig: NextConfig = {
   // For Firebase App Hosting, we don't need standalone output
   // output: 'export' for static, or remove for SSR
+  
+  // Configure webpack for path aliases
+  webpack: (config) => {
+    config.resolve.alias['@'] = path.resolve(__dirname, 'src');
+    return config;
+  },
   
   // Configure images for SSR
   images: {
