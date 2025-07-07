@@ -16,6 +16,7 @@ import { PropertyImageGallery } from './property-image-gallery';
 interface ResultsTableProps {
   properties: Property[];
   onSave: (property: Property) => void;
+  savedPropertyIds?: Set<string>; // Track which properties are already saved
 }
 
 interface DetailItemProps {
@@ -54,7 +55,7 @@ const DetailItem: React.FC<DetailItemProps> = ({ icon: Icon, label, value }) => 
   );
 };
 
-export function ResultsTable({ properties, onSave }: ResultsTableProps) {
+export function ResultsTable({ properties, onSave, savedPropertyIds = new Set() }: ResultsTableProps) {
   const [enhanceContent, setEnhanceContent] = useState<{ original: string, enhanced: string } | null>(null);
 
   if (properties.length === 0) {
@@ -111,9 +112,15 @@ export function ResultsTable({ properties, onSave }: ResultsTableProps) {
                   >
                    <Sparkles className="mr-2" /> View AI Enhancement
                  </Button>
-                 <Button size="sm" onClick={() => onSave(prop)}>
-                   <Save className="mr-2" /> Save to Database
-                  </Button>
+                 {savedPropertyIds.has(prop.id) ? (
+                   <Button size="sm" variant="secondary" disabled>
+                     <CheckCircle className="mr-2 h-4 w-4" /> Already Saved
+                   </Button>
+                 ) : (
+                   <Button size="sm" onClick={() => onSave(prop)}>
+                     <Save className="mr-2 h-4 w-4" /> Save to Database
+                   </Button>
+                 )}
               </div>
               <Separator />
 

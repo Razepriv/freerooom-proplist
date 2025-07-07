@@ -38,6 +38,7 @@ export function MainPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [bulkUrls, setBulkUrls] = useState('');
+  const [savedPropertyIds, setSavedPropertyIds] = useState<Set<string>>(new Set());
   
   // Add filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -137,6 +138,7 @@ export function MainPage() {
       try {
         const result = await saveProperty(property);
         if (result.success) {
+          setSavedPropertyIds(prev => new Set(prev).add(property.id));
           toast({
             title: "Property Saved",
             description: result.message || "The property has been added to your database.",
@@ -350,6 +352,7 @@ export function MainPage() {
                 <ResultsTable 
                   properties={filteredResults}
                   onSave={handleSaveProperty}
+                  savedPropertyIds={savedPropertyIds}
                 />
               </>
             )}

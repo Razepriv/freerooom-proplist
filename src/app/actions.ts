@@ -335,3 +335,67 @@ export async function updatePropertyWithExtractedContactsAction(propertyId: stri
     const { updatePropertyWithExtractedContactsServer } = await import('@/lib/contact-extraction');
     return await updatePropertyWithExtractedContactsServer(propertyId);
 }
+
+export async function checkPropertyExists(property: Property): Promise<boolean> {
+    console.log('🔍 Checking if property exists:', {
+        id: property.id,
+        title: property.title,
+        url: property.original_url
+    });
+    
+    try {
+        const { getDb } = await import('@/lib/db');
+        const existingProperties = await getDb();
+        
+        // Use same duplicate detection logic as savePropertiesToDb
+        const existingKeys = new Set<string>();
+        existingProperties.forEach(p => {
+            existingKeys.add(`${p.original_url}::${p.original_title}`);
+            const locationKey = `${p.location}::${p.price}::${p.bedrooms}::${p.bathrooms}`;
+            existingKeys.add(locationKey);
+            if (p.enhanced_title) {
+                existingKeys.add(`enhanced::${p.enhanced_title.substring(0, 50).toLowerCase()}`);
+            }
+            if (p.original_title) {
+                existingKeys.add(`original::${p.original_title.substring(0, 50).toLowerCase()}`);
+            }
+            if (p.reference_id) {
+                existingKeys.add(`ref::${p.reference_id}`);
+            }
+            if (p.permit_number) {
+                existingKeys.add(`permit::${p.permit_number}`);
+            }
+        });
+
+        // Check if property would be considered a duplicate
+        if (property.original_url === 'scraped-from-html') {
+            const locationKey = `${property.location}::${property.price}::${property.bedrooms}::${property.bathrooms}`;
+            const enhancedTitleKey = property.enhanced_title ? `enhanced::${property.enhanced_title.substring(0, 50).toLowerCase()}` : null;
+            const originalTitleKey = property.original_title ? `original::${property.original_title.substring(0, 50).toLowerCase()}` : null;
+            const refKey = property.reference_id ? `ref::${property.reference_id}` : null;
+            const permitKey = property.permit_number ? `permit::${property.permit_number}` : null;
+            
+            return existingKeys.has(locationKey) || 
+                   (enhancedTitleKey !== null && existingKeys.has(enhancedTitleKey)) ||
+                   (originalTitleKey !== null && existingKeys.has(originalTitleKey)) ||
+                   (refKey !== null && existingKeys.has(refKey)) ||
+                   (permitKey !== null && existingKeys.has(permitKey));
+        } else {
+            const originalKey = `${property.original_url}::${property.original_title}`;
+            if (existingKeys.has(originalKey)) {
+                return true;
+            }
+            
+            const locationKey = `${property.location}::${property.price}::${property.bedrooms}::${property.bathrooms}`;
+            const refKey = property.reference_id ? `ref::${property.reference_id}` : null;
+            const permitKey = property.permit_number ? `permit::${property.permit_number}` : null;
+            
+            return existingKeys.has(locationKey) || 
+                   (refKey !== null && existingKeys.has(refKey)) ||
+                   (permitKey !== null && existingKeys.has(permitKey));
+        }
+    } catch (error) {
+        console.error("❌ Error checking if property exists:", error);
+        return false; // If we can't check, assume it doesn't exist
+    }
+}
