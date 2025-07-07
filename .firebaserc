@@ -1,8 +1,9 @@
 {
   "projects": {
-    "default": "fr-toolv1",
+    "default": "fr-toolv2",
     "testing v1": "fr-toolv1",
-    "v1": "fr-toolv1"
+    "v1": "fr-toolv1",
+    "v2": "fr-toolv2"
   },
   "targets": {},
   "etags": {}

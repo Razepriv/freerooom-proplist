@@ -27,6 +27,7 @@ const nextConfig: NextConfig = {
         'localhost:9002', 
         'fr-toolv2.web.app', 
         'fr-toolv2.firebaseapp.com',
+        'freerooom-proplist--fr-toolv2.us-central1.hosted.app',
         '*.firebaseapp.com',
         '*.a.run.app'
       ]
