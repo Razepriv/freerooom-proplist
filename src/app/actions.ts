@@ -276,8 +276,11 @@ export async function saveProperty(property: Property) {
         return { success: true, message: "Property saved successfully" };
     } catch (error) {
         console.error("❌ Error saving property:", error);
-        if (error instanceof Error && error.message.includes("already exist")) {
-            return { success: false, message: "This property already exists in the database" };
+        if (error instanceof Error) {
+            if (error.message.includes("already exist")) {
+                return { success: false, message: "This property already exists in the database" };
+            }
+            return { success: false, message: error.message };
         }
         return { success: false, message: "Failed to save property to database" };
     }

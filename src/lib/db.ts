@@ -97,7 +97,7 @@ export async function savePropertiesToDb(newProperties: Property[]): Promise<voi
 
     if (newProperties.length > 0 && uniqueNewProperties.length === 0) {
        console.log("All properties already exist in the database. No new properties to save.");
-       return; // Don't throw error, just return silently
+       throw new Error("All properties already exist in the database"); // Throw error so caller knows
     }
     
     if (uniqueNewProperties.length === 0) {
