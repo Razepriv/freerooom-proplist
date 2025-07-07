@@ -465,8 +465,10 @@ export function createDatabaseAdapter(): DatabaseAdapter {
   });
   
   // Force Firestore adapter if we have Firebase configuration and production storage type
-  if (ENV_CONFIG.STORAGE_TYPE === 'database' && ENV_CONFIG.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
-    console.log('📁 Using Firestore database adapter (forced for database storage type)');
+  // Also force it if the base URL indicates we're in production (Firebase App Hosting)
+  if ((ENV_CONFIG.STORAGE_TYPE === 'database' && ENV_CONFIG.NEXT_PUBLIC_FIREBASE_PROJECT_ID) ||
+      (ENV_CONFIG.BASE_URL && ENV_CONFIG.BASE_URL.includes('hosted.app'))) {
+    console.log('📁 Using Firestore database adapter (forced for production or database storage type)');
     return new FirestoreAdapter();
   }
   

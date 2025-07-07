@@ -19,6 +19,8 @@ env:
     value: database
   - variable: UPLOAD_PROVIDER
     value: firebase
+  - variable: NEXT_PUBLIC_BASE_URL
+    value: https://freerooom-proplist--fr-toolv2.us-central1.hosted.app
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: AIzaSyD2ScfODrkVf0zWaJdsjy_Mw4c09k0oM8Y
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
