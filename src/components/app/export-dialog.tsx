@@ -107,6 +107,9 @@ export function ExportDialog({ allProperties }: ExportDialogProps) {
     ...allProperties.map(p => p.location).filter(Boolean)
   ])];
 
+  // Helper: require BOTH start and end date for export
+  const isDateFilterSet = !!filter.startDate && !!filter.endDate;
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -330,25 +333,31 @@ export function ExportDialog({ allProperties }: ExportDialogProps) {
         <div className="flex justify-between border-t pt-4">
           <div className="text-sm text-muted-foreground">
             Ready to export {filteredProperties.length} properties
+            {!isDateFilterSet && (
+              <span className="ml-2 text-red-500">Set both a start and end date to enable export.</span>
+            )}
           </div>
           <div className="flex gap-2">
             <Button 
               variant="outline" 
               onClick={() => handleExport('json')}
-              disabled={filteredProperties.length === 0}
+              disabled={filteredProperties.length === 0 || !isDateFilterSet}
+              title={!isDateFilterSet ? 'Set both a start and end date to enable export' : ''}
             >
               Export JSON
             </Button>
             <Button 
               variant="outline" 
               onClick={() => handleExport('csv')}
-              disabled={filteredProperties.length === 0}
+              disabled={filteredProperties.length === 0 || !isDateFilterSet}
+              title={!isDateFilterSet ? 'Set both a start and end date to enable export' : ''}
             >
               Export CSV
             </Button>
             <Button 
               onClick={() => handleExport('excel')}
-              disabled={filteredProperties.length === 0}
+              disabled={filteredProperties.length === 0 || !isDateFilterSet}
+              title={!isDateFilterSet ? 'Set both a start and end date to enable export' : ''}
             >
               Export Excel
             </Button>
