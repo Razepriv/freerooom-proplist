@@ -478,6 +478,16 @@ export function createImageStorage(): ImageStorageAdapter {
   const isServerless = ENV_CONFIG.isServerless();
   const isProduction = ENV_CONFIG.isProduction();
 
+  // Debug: Print environment variables
+  console.log('DEBUG ENV_CONFIG:', {
+    UPLOAD_PROVIDER: ENV_CONFIG.UPLOAD_PROVIDER,
+    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ENV_CONFIG.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID: ENV_CONFIG.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    NODE_ENV: process.env.NODE_ENV,
+    isServerless,
+    isProduction
+  });
+
   // In serverless production environments, prefer cloud storage
   if (isServerless || isProduction) {
     // Check for Firebase Storage first

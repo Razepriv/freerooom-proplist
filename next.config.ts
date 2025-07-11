@@ -18,7 +18,8 @@ const nextConfig: NextConfig = {
       'fr-toolv2.firebasestorage.app',
       'images.unsplash.com',
       'via.placeholder.com',
-      'picsum.photos'
+      'picsum.photos',
+      'placehold.co'
     ],
     remotePatterns: [
       {
@@ -44,6 +45,14 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: '*.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'fr-toolv2.firebasestorage.app',
       }
     ]
   },

@@ -140,72 +140,73 @@ export function DatabaseTable({
       <Accordion type="single" collapsible className="w-full space-y-3">
         {properties.map((prop) => (
           <AccordionItem value={prop.id} key={prop.id} className="border rounded-lg bg-card overflow-hidden transition-all hover:border-primary/20">
-            <AccordionTrigger className="p-4 hover:no-underline [&[data-state=open]>div>div>svg.chevron]:rotate-180">
-              <div className="flex items-center justify-between gap-4 w-full text-left">
-                  {onSelectProperty && (
-                    <Checkbox
-                      checked={isPropertySelected(prop)}
-                      onCheckedChange={(checked) => handleSelectProperty(prop, checked as boolean)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="mr-2"
-                    />
-                  )}
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <PropertyImage
-                        src={prop.image_url || 'https://placehold.co/600x400.png'}
-                        alt={prop.title}
-                        className="hidden sm:block w-[120px] h-[80px]"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold truncate text-base" title={prop.title}>{prop.title}</p>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
-                          <MapPin className="h-3 w-3" />
-                          {prop.location}
-                        </p>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
-                          <Badge variant="secondary" className="text-nowrap">{prop.property_type}</Badge>
-                          <span className="flex items-center gap-1.5"><BedDouble className="h-4 w-4 text-primary/70" /> {prop.bedrooms} beds</span>
-                          <span className="flex items-center gap-1.5"><Bath className="h-4 w-4 text-primary/70" /> {prop.bathrooms} baths</span>
-                          <span className="flex items-center gap-1.5"><Square className="h-4 w-4 text-primary/70" /> {prop.area}</span>
+            <div className="flex items-center p-4">
+              {onSelectProperty && (
+                <Checkbox
+                  checked={isPropertySelected(prop)}
+                  onCheckedChange={(checked) => handleSelectProperty(prop, checked as boolean)}
+                  className="mr-3"
+                />
+              )}
+              <AccordionTrigger className="flex-1 p-0 hover:no-underline [&[data-state=open]>div>div>svg.chevron]:rotate-180">
+                <div className="flex items-center justify-between gap-4 w-full text-left">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <PropertyImage
+                          src={prop.image_url || 'https://placehold.co/600x400.png'}
+                          alt={prop.title}
+                          className="hidden sm:block w-[120px] h-[80px]"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold truncate text-base" title={prop.title}>{prop.title}</p>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
+                            <MapPin className="h-3 w-3" />
+                            {prop.location}
+                          </p>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
+                            <Badge variant="secondary" className="text-nowrap">{prop.property_type}</Badge>
+                            <span className="flex items-center gap-1.5"><BedDouble className="h-4 w-4 text-primary/70" /> {prop.bedrooms} beds</span>
+                            <span className="flex items-center gap-1.5"><Bath className="h-4 w-4 text-primary/70" /> {prop.bathrooms} baths</span>
+                            <span className="flex items-center gap-1.5"><Square className="h-4 w-4 text-primary/70" /> {prop.area}</span>
+                          </div>
                         </div>
-                      </div>
-                  </div>
-                  <div className="flex items-center gap-2 pl-4">
-                      <p className="font-semibold text-lg text-primary text-right hidden md:block">{prop.price}</p>
-                      <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <div 
-                              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-8 w-8 cursor-pointer"
-                              role="button"
-                              tabIndex={0}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                }
-                              }}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </div>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                              <DropdownMenuItem onSelect={() => onEdit(prop)}>
-                                  <Edit className="mr-2 h-4 w-4" /> Edit
-                              </DropdownMenuItem>
-                              {prop.original_url && prop.original_url.startsWith('http') && (
-                                  <DropdownMenuItem onSelect={() => window.open(prop.original_url, '_blank')}>
-                                      <ExternalLink className="mr-2 h-4 w-4" /> View Source
-                                  </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem onSelect={() => setDeleteCandidateId(prop.id)} className="text-destructive">
-                                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                              </DropdownMenuItem>
-                          </DropdownMenuContent>
-                      </DropdownMenu>
-                      <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200 text-muted-foreground chevron" />
-                  </div>
-              </div>
-            </AccordionTrigger>
+                    </div>
+                    <div className="flex items-center gap-2 pl-4">
+                        <p className="font-semibold text-lg text-primary text-right hidden md:block">{prop.price}</p>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <div 
+                                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-8 w-8 cursor-pointer"
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                  }
+                                }}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </div>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenuItem onSelect={() => onEdit(prop)}>
+                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                                {prop.original_url && prop.original_url.startsWith('http') && (
+                                    <DropdownMenuItem onSelect={() => window.open(prop.original_url, '_blank')}>
+                                        <ExternalLink className="mr-2 h-4 w-4" /> View Source
+                                    </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onSelect={() => setDeleteCandidateId(prop.id)} className="text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200 text-muted-foreground chevron" />
+                    </div>
+                </div>
+              </AccordionTrigger>
+            </div>
             <AccordionContent>
                 <div className="px-4 pb-4 border-t pt-4 bg-muted/50 space-y-6">
                     <p className="font-semibold text-xl text-primary text-right md:hidden">{prop.price}</p>
